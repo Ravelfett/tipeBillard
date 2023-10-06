@@ -36,25 +36,16 @@ function dotProduct(x1, y1, x2, y2) {
 
 
 class Quadtree {
-  constructor(pos, size){
+  constructor(pos, size, d){
     this.pos = pos.clone();
     this.size = size.clone();
     this.objs = [];
     this.grid = [];
     this.opened = false;
+    this.d = d;
   }
   add(obj) {
-    if (this.objs.length <= 1){
-      this.objs.push(obj);
-      let s = this.size.mult(0.5);
-      this.grid = [
-        new Quadtree(this.pos, s),
-        new Quadtree(this.pos.add(new Vector(s.x, 0)), s),
-        new Quadtree(this.pos.add(new Vector(0, s.y)), s),
-        new Quadtree(this.pos.add(new Vector(s.x, s.y)), s),
-      ]
-    } else {
-      this.opened = true;
+    if (this.opened == true){
       let s = this.size.mult(0.5);
       if(obj.pos.x - this.pos.x < s.x){
         if(obj.pos.y - this.pos.y < s.y) this.grid[0].add(obj)
@@ -62,6 +53,22 @@ class Quadtree {
       }else{
         if(obj.pos.y - this.pos.y < s.y) this.grid[1].add(obj)
         else this.grid[3].add(obj)
+      } 
+    } else {
+      this.objs.push(obj);
+      if (this.objs.length == 2 && this.d < 6){
+        this.opened = true;
+        let s = this.size.mult(0.5);
+        this.grid = [
+          new Quadtree(this.pos, s, this.d+1),
+          new Quadtree(this.pos.add(new Vector(s.x, 0)), s, this.d+1),
+          new Quadtree(this.pos.add(new Vector(0, s.y)), s, this.d+1),
+          new Quadtree(this.pos.add(new Vector(s.x, s.y)), s, this.d+1),
+        ]
+        for(let o of this.objs){
+          this.add(o);
+        }
+        this.objs = [];
       }
     }
   }
@@ -170,9 +177,9 @@ class Object{
 }
 
 let wrld = new World();
-for(let i = 0; i < 500; i++){
-  //let obj = new Object(Math.random()*width, Math.random()*height, 5)
-  let obj = new Object(60, 60, 2);
+for(let i = 0; i < 50; i++){
+  //let obj = new Object(Math.random()*width, Math.random()*height, 10)
+  let obj = new Object(100, 100, 10);
   let angl = Math.random();
   obj.vel.x = Math.cos(angl*2*Math.PI);
   obj.vel.y = Math.sin(angl*2*Math.PI);
@@ -189,7 +196,7 @@ function render(){
   context.fill();
 
   wrld.update();
-  wrld.quadtree = new Quadtree(new Vector(0, 0), new Vector(width, height));
+  wrld.quadtree = new Quadtree(new Vector(0, 0), new Vector(width, height), 0);
   for(let obj of wrld.objects){
     wrld.quadtree.add(obj);
   }
