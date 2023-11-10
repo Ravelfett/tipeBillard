@@ -77,7 +77,13 @@ class Quadtree {
       max.x < this.pos.x ||
       min.y > this.pos.y + this.size.y ||
       max.y < this.pos.y)){
-      
+      if (this.opened){
+        return Array.prototype.concat(...(this.grid.map((x) => x.getObjsIn(min, max))));
+      }else{
+        return this.objs;
+      }
+    }else {
+      return [];
     }
   }
   render(ctx){
@@ -93,7 +99,7 @@ class Quadtree {
 class World{
   constructor(){
     this.objects = [];
-    this.quadtree = new Quadtree(new Vector(0, 0), new Vector(width, height));
+    this.quadtree = new Quadtree(new Vector(0, 0), new Vector(width, height), 0);
   }
   render(ctx){
     for(let i in this.objects){
@@ -149,7 +155,7 @@ class Vector{
 }
 
 
-class Object{
+class Obj{
   constructor(x, y, r){
     this.pos = new Vector(x, y);
     this.vel = new Vector(0, 0);
@@ -178,8 +184,8 @@ class Object{
 
 let wrld = new World();
 for(let i = 0; i < 50; i++){
-  //let obj = new Object(Math.random()*width, Math.random()*height, 10)
-  let obj = new Object(100, 100, 10);
+  let obj = new Obj(Math.random()*width, Math.random()*height, 10)
+  //let obj = new Obj(100, 100, 10);
   let angl = Math.random();
   obj.vel.x = Math.cos(angl*2*Math.PI);
   obj.vel.y = Math.sin(angl*2*Math.PI);
@@ -196,9 +202,12 @@ function render(){
   context.fill();
 
   wrld.update();
-  wrld.quadtree = new Quadtree(new Vector(0, 0), new Vector(width, height), 0);
+  /*wrld.quadtree = new Quadtree(new Vector(0, 0), new Vector(width, height), 0);
   for(let obj of wrld.objects){
     wrld.quadtree.add(obj);
+  }*/
+  for(let obj of wrld.quadtree.getObjsIn(new Vector(mouse[0], mouse[1]), new Vector(mouse[0]+20, mouse[1]+20))){
+    console.log(obj)
   }
 
 
