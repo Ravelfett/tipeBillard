@@ -20,7 +20,6 @@ document.addEventListener('mousemove', (p) => {
 
 document.onmousedown = function (e) {
   if (e.button == 0) {
-    console.log(wrld)
     wrld.objects[0].vel.x = (wrld.objects[0].pos.x - mouse[0])/-10;
     wrld.objects[0].vel.y = (wrld.objects[0].pos.y - mouse[1])/-10;
     pressed = true;
@@ -59,7 +58,7 @@ class Quadtree {
       } 
     } else {
       this.objs.push(obj);
-      if (this.objs.length == 2 && this.d < 6){
+      if (this.objs.length == 2 && this.d < 8){
         this.opened = true;
         let s = this.size.mult(0.5);
         this.grid = [
@@ -105,7 +104,7 @@ class World{
     this.quadtree = new Quadtree(new Vector(0, 0), new Vector(width, height), 0);
   }
   render(ctx){
-    this.quadtree.render(ctx);
+    //this.quadtree.render(ctx);
     for(let i in this.objects){
       this.objects[i].render(ctx);
     }
@@ -199,16 +198,17 @@ class Obj{
   }
 }
 
-let wrld = new World();
-let obj = new Obj(width*1/3, height/2, 12)
-const nobjs = 100
+const wrld = new World();
+const nobjs = 18;
+const size = 10;
+let obj = new Obj(width*1/3, height/2, 5*size)
 obj.s = 1;
-//obj.vel.x = 10;
+obj.m = 5*5;
 wrld.objects.push(obj);
-for(let i = 0; i < nobjs ; i++){  
+for(let i = 0; i < nobjs ; i++){
   for(let j = 0; j <= i; j++){ 
   
-    let obj = new Obj(width*2/3+i*23, height/2+(i/2-(i-j))*26, 12)
+    let obj = new Obj(width*2/3+i*size*2, height/2+(i/2-(i-j))*size*2*Math.sqrt(2), size)
     wrld.objects.push(obj)
     wrld.quadtree.add(obj);
   }
@@ -222,14 +222,21 @@ function render(){
   context.fillStyle = "#330055";
   context.rect(0, 0, width, height);
   context.fill();
+  context.closePath();
 
   wrld.update();
   wrld.quadtree = new Quadtree(new Vector(0, 0), new Vector(width, height), 0);
   for(let obj of wrld.objects){
     wrld.quadtree.add(obj);
   }
+    context.beginPath();
+    context.fillStyle = "#326";
+    context.rect(mouse[0], mouse[1], 20, 20);
+    context.fill();
+    context.closePath();
   for(let obj of wrld.quadtree.getObjsIn(new Vector(mouse[0], mouse[1]), new Vector(mouse[0]+20, mouse[1]+20))){
-    //console.log(obj)
+    
+    console.log(obj)
   }
 
 
