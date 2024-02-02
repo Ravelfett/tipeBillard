@@ -107,6 +107,14 @@ class World{
     //this.quadtree.render(ctx);
     for(let i in this.objects){
       this.objects[i].render(ctx);
+      if(this.objects[i].id == holyid && false){
+      ctx.strokeStyle = "blue";
+      ctx.lineWidth = 1;
+      let r = this.objects[i].r + 10;
+      let p = this.objects[i].pos.add(new Vector(-r, -r));
+      let p2 = this.objects[i].pos.add(new Vector(r, r));
+      ctx.strokeRect(p.x, p.y, p2.x - p.x, p2.y - p.y);
+      }
     }
   }
   update(){
@@ -117,7 +125,45 @@ class World{
     for(let i in this.objects){
       let v = this.objects[i].pos.add(new Vector(-width/2, -height/2));
       //this.objects[i].acc = this.objects[i].acc.add(v).mult(-0.001);
-      for(let j in this.objects){
+      let r = this.objects[i].r + 10;
+      let min = this.objects[i].pos.add(new Vector(-r, -r)); 
+      let max = this.objects[i].pos.add(new Vector(r, r));
+      let objs = wrld.quadtree.getObjsIn(
+        min,
+        max
+      )
+      for(let obj of objs){
+        if(this.objects[i].id != obj.id){
+          let x1 = this.objects[i].pos.x, x2 = obj.pos.x;
+          let y1 = this.objects[i].pos.y, y2 = obj.pos.y;
+          let dist = Math.sqrt(Math.pow(x1-x2, 2) + Math.pow(y1-y2, 2));
+          let r1 = this.objects[i].r, r2 = obj.r;
+          if(dist < r1 + r2){
+
+            let o1 = this.objects[i];
+            let o2 = obj;
+
+            let m21 = o2.m/o1.m;
+            let x21 = o2.pos.x - o1.pos.x;
+            let y21 = o2.pos.y - o1.pos.y;
+            let vx21 = o2.vel.x - o1.vel.x;
+            let vy21 = o2.vel.y - o1.vel.y;
+
+            let vx_cm = (o1.m*o1.vel.x + o2.m*o2.vel.x)/(o1.m+o2.m);
+            let vy_cm = (o1.m*o1.vel.y + o2.m*o2.vel.y)/(o1.m+o2.m);
+
+            if ( (vx21*x21 + vy21*y21) >= 0) continue;
+
+            let a=y21/x21;
+            let dvx2= -2*(vx21 +a*vy21)/((1+a*a)*(1+m21)) ;
+            o2.vel.x += dvx2;
+            o2.vel.y += a*dvx2;
+            o1.vel.x -= m21*dvx2;
+            o1.vel.y -= a*m21*dvx2;
+          }
+        }
+      }
+      /*for(let j in this.objects){
         if(i != j){
           let x1 = this.objects[i].pos.x, x2 = this.objects[j].pos.x;
           let y1 = this.objects[i].pos.y, y2 = this.objects[j].pos.y;
@@ -146,7 +192,7 @@ class World{
             o1.vel.y -= a*m21*dvx2;
           }
         }
-      }
+      }*/
     }
   }
 }
@@ -170,9 +216,11 @@ class Vector{
 
 class Obj{
   constructor(x, y, r){
+    this.id = Math.random();
     this.pos = new Vector(x, y);
     this.vel = new Vector(0, 0);
     this.acc = new Vector(0, 0);
+    this.c = "white";
     this.r = r;
     this.s = 0;
     this.m = 1;
@@ -180,11 +228,12 @@ class Obj{
   render(ctx){
     ctx.beginPath();
     ctx.arc(this.pos.x, this.pos.y, this.r, 0, 2*Math.PI);
-    ctx.fillStyle = (this.s==0 )?"white":"red";
+    ctx.fillStyle = (this.s==1 )?"blue": this.c;
     ctx.fill();
     ctx.closePath();
   }
   update(){
+    this.s = 0;
     let f = new Vector(0, 0)
     this.vel = this.vel.mult(0.98);
     //this.acc = this.acc.add(f);
@@ -199,11 +248,11 @@ class Obj{
 }
 
 const wrld = new World();
-const nobjs = 18;
-const size = 10;
-let obj = new Obj(width*1/3, height/2, 5*size)
-obj.s = 1;
-obj.m = 5*5;
+const nobjs = 60;
+const size = 3;
+let obj = new Obj(width*1/3, height/2, size)
+obj.c = "red";
+const holyid = obj.id;
 wrld.objects.push(obj);
 for(let i = 0; i < nobjs ; i++){
   for(let j = 0; j <= i; j++){ 
@@ -229,15 +278,15 @@ function render(){
   for(let obj of wrld.objects){
     wrld.quadtree.add(obj);
   }
-    context.beginPath();
-    context.fillStyle = "#326";
-    context.rect(mouse[0], mouse[1], 20, 20);
-    context.fill();
-    context.closePath();
-  for(let obj of wrld.quadtree.getObjsIn(new Vector(mouse[0], mouse[1]), new Vector(mouse[0]+20, mouse[1]+20))){
-    
-    console.log(obj)
-  }
+  /*context.beginPath();
+  context.fillStyle = "#326";
+  context.rect(mouse[0], mouse[1], 100, 100);
+  context.fill();
+  context.closePath();
+  //console.log(wrld.quadtree.getObjsIn(new Vector(mouse[0], mouse[1]), new Vector(mouse[0]+100, mouse[1]+100)).length)
+  for(let obj of wrld.quadtree.getObjsIn(new Vector(mouse[0], mouse[1]), new Vector(mouse[0]+100, mouse[1]+100))){
+    obj.s = 1 
+  }*/
 
 
   wrld.render(context);
