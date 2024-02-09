@@ -40,7 +40,7 @@ function dotProduct(x1, y1, x2, y2) {
 const pool = new Pool(new Vector(800, 400));
 const wrld = new World(pool);
 const nobjs = 7;
-const size = 10;
+const size = 14;
 let obj = new Obj(wrld, pool.size.x*1/3, pool.size.y/2, size)
 obj.c = "red";
 const holyid = obj.id;

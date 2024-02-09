@@ -63,12 +63,13 @@ class World{
   constructor(pool){
     this.objects = [];
     this.pool = pool;
+    this.offset = new Vector(width, height).mult(1/2).add(this.pool.size.clone().mult(-1/2));
     this.quadtree = new Quadtree(new Vector(0, 0), pool.size.clone(), 0);
   }
   render(ctx){
     //this.quadtree.render(ctx);
     ctx.save();
-    ctx.translate(width/2-this.pool.size.x/2, height/2-this.pool.size.y/2);
+    ctx.translate(this.offset.x, this.offset.y);
     ctx.fillStyle = "grey";
     ctx.fillRect(0, 0, this.pool.size.x, this.pool.size.y);
     for(let i in this.objects){
