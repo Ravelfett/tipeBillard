@@ -39,7 +39,7 @@ function dotProduct(x1, y1, x2, y2) {
 
 const pool = new Pool(new Vector(800, 400));
 const wrld = new World(pool);
-const nobjs = 7;
+const nobjs = 5;
 const size = 10;
 let obj = new Obj(wrld, pool.size.x*1/3, pool.size.y/2, size)
 obj.c = "red";
@@ -48,7 +48,7 @@ wrld.objects.push(obj);
 for(let i = 0; i < nobjs ; i++){
   for(let j = 0; j <= i; j++){ 
   
-    let obj = new Obj(wrld, pool.size.x*2/3+i*size*2, pool.size.y/2+(i/2-(i-j))*size*2*Math.sqrt(2), size)
+    let obj = new Obj(wrld, pool.size.x*2/3+i*size*1.75, pool.size.y/2+(i/2-(i-j))*size*2, size)
     wrld.objects.push(obj)
     wrld.quadtree.add(obj);
   }
