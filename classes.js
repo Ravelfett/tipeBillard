@@ -7,6 +7,12 @@ class Quadtree {
     this.opened = false;
     this.d = d;
   }
+  reset(){
+    this.objs = [];
+    this.grid = [];
+    this.opened = false;
+    this.d = 0;
+  }
   add(obj) {
     if (this.opened == true){
       let s = this.size.mult(0.5);
@@ -63,25 +69,32 @@ class World{
   constructor(pool){
     this.objects = [];
     this.pool = pool;
+    for(let i = 0; i < 3; i++){
+      for(let j = 0; j < 2; j++){
+        this.objects.push(new Hole(this, (i-1)*this.pool.size.x/2, (j-1/2)*this.pool.size.y , 80))
+      }
+    }
     this.offset = new Vector(width, height).mult(1/2).add(this.pool.size.clone().mult(-1/2));
-    this.quadtree = new Quadtree(new Vector(0, 0), pool.size.clone(), 0);
+    this.zoom = 0.4;
+    this.quadtree = new Quadtree(new Vector(-pool.size.x/2, -pool.size.y/2), pool.size.clone(), 0);
   }
   render(ctx){
-    //this.quadtree.render(ctx);
     ctx.save();
-    ctx.translate(this.offset.x, this.offset.y);
+    ctx.translate(width/2, height/2);
+    ctx.scale(this.zoom, this.zoom);
     ctx.fillStyle = "grey";
-    ctx.fillRect(0, 0, this.pool.size.x, this.pool.size.y);
+    ctx.fillRect(-this.pool.size.x/2, -this.pool.size.y/2, this.pool.size.x, this.pool.size.y);
+    //this.quadtree.render(ctx);
     for(let i in this.objects){
       this.objects[i].render(ctx);
-      if(this.objects[i].id == holyid && false){
+      /*if(this.objects[i].id == holyid && false){
         ctx.strokeStyle = "blue";
         ctx.lineWidth = 1;
         let r = this.objects[i].r + 10;
         let p = this.objects[i].pos.add(new Vector(-r, -r));
         let p2 = this.objects[i].pos.add(new Vector(r, r));
         ctx.strokeRect(p.x, p.y, p2.x - p.x, p2.y - p.y);
-      }
+      }*/
     }
     ctx.restore();
   }
@@ -101,13 +114,21 @@ class World{
         max
       )
       for(let obj of objs){
-        if(this.objects[i].id != obj.id){
+        if(this.objects[i].id != obj.id && obj.s != 1 && this.objects[i].s != 1){
           let x1 = this.objects[i].pos.x, x2 = obj.pos.x;
           let y1 = this.objects[i].pos.y, y2 = obj.pos.y;
           let dist = Math.sqrt(Math.pow(x1-x2, 2) + Math.pow(y1-y2, 2));
           let r1 = this.objects[i].r, r2 = obj.r;
           if(dist < r1 + r2){
-
+            if(obj.type == 1) {
+              this.objects[i].s = 1;
+              console.log("IHIHIHIHIHIHIHI")
+              continue
+            }
+            if(this.objects[i].type == 1) {
+              obj.s = 1;
+              continue
+            }
             let o1 = this.objects[i];
             let o2 = obj;
 
@@ -168,6 +189,7 @@ class World{
 class Pool{
   constructor(size){
     this.size = size;
+    this.holes = [];
   }
 }
 
@@ -198,7 +220,8 @@ class Obj{
     this.c = "white";
     this.r = r;
     this.s = 0;
-    this.m = 1;
+    this.m = 0.17;
+    this.type = 0;
   }
   render(ctx){
     ctx.beginPath();
@@ -208,16 +231,26 @@ class Obj{
     ctx.closePath();
   }
   update(){
-    this.s = 0;
-    let f = new Vector(0, 0)
-    this.vel = this.vel.mult(0.98);
-    //this.acc = this.acc.add(f);
+    this.vel = this.vel.mult(0.99);
+    this.acc.add(new Vector(
+      -this.m * G * f * Math.cos(Math.atan2(this.vel.y, this.vel.x)),
+      -this.m * G * f * Math.sin(Math.atan2(this.vel.y, this.vel.x))
+    ))
     this.vel = this.vel.add(this.acc);
     this.pos = this.pos.add(this.vel);
     this.acc = new Vector(0, 0);
-    if(this.pos.x-this.r < 0) this.vel.x = Math.abs(this.vel.x);
-    if(this.pos.x+this.r > this.world.pool.size.x) this.vel.x = -Math.abs(this.vel.x);
-    if(this.pos.y-this.r < 0) this.vel.y = Math.abs(this.vel.y);
-    if(this.pos.y+this.r > this.world.pool.size.y) this.vel.y = -Math.abs(this.vel.y);
+    if(this.pos.x-this.r < -this.world.pool.size.x/2) this.vel.x = Math.abs(this.vel.x);
+    if(this.pos.x+this.r > this.world.pool.size.x/2) this.vel.x = -Math.abs(this.vel.x);
+    if(this.pos.y-this.r < -this.world.pool.size.y/2) this.vel.y = Math.abs(this.vel.y);
+    if(this.pos.y+this.r > this.world.pool.size.y/2) this.vel.y = -Math.abs(this.vel.y);
+  }
+}
+class Hole extends Obj{
+  constructor(world, x, y, r){
+    super(world, x, y, r);
+    this.type = 1;
+  }
+  update(){
+
   }
 }

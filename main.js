@@ -14,14 +14,14 @@ let pressed = false;
 document.addEventListener('contextmenu', event => event.preventDefault());
 
 document.addEventListener('mousemove', (p) => {
-  mouse[0] = (p.pageX) - wrld.offset.x;
-  mouse[1] = (p.pageY) - wrld.offset.y;
+  mouse[0] = ((p.pageX) - width/2)/wrld.zoom;
+  mouse[1] = ((p.pageY) - height/2)/wrld.zoom;
 }, false);
 
 document.onmousedown = function (e) {
   if (e.button == 0) {
-    wrld.objects[0].vel.x = (wrld.objects[0].pos.x - mouse[0])/-10;
-    wrld.objects[0].vel.y = (wrld.objects[0].pos.y - mouse[1])/-10;
+    wrld.objects[6].vel.x = (wrld.objects[6].pos.x - mouse[0])/-10;
+    wrld.objects[6].vel.y = (wrld.objects[6].pos.y - mouse[1])/-10;
     pressed = true;
   }
 };
@@ -37,18 +37,20 @@ function dotProduct(x1, y1, x2, y2) {
 }
 
 
-const pool = new Pool(new Vector(800, 400));
+const pool = new Pool(new Vector(2300, 2300/2));
 const wrld = new World(pool);
 const nobjs = 5;
-const size = 10;
-let obj = new Obj(wrld, pool.size.x*1/3, pool.size.y/2, size)
+const size = 50;
+const G = 9.81;
+const f = 0.01;
+let obj = new Obj(wrld, -pool.size.x/4, 0, size)
 obj.c = "red";
 const holyid = obj.id;
 wrld.objects.push(obj);
 for(let i = 0; i < nobjs ; i++){
   for(let j = 0; j <= i; j++){ 
   
-    let obj = new Obj(wrld, pool.size.x*2/3+i*size*1.75, pool.size.y/2+(i/2-(i-j))*size*2, size)
+    let obj = new Obj(wrld, pool.size.x*1/6+i*size*1.75,(i/2-(i-j))*size*2, size)
     wrld.objects.push(obj)
     wrld.quadtree.add(obj);
   }
@@ -65,7 +67,7 @@ function render(){
   context.closePath();
 
   wrld.update();
-  wrld.quadtree = new Quadtree(new Vector(0, 0), pool.size.clone(), 0);
+  wrld.quadtree.reset();
   for(let obj of wrld.objects){
     wrld.quadtree.add(obj);
   }
