@@ -14,18 +14,22 @@ let pressed = false;
 document.addEventListener('contextmenu', event => event.preventDefault());
 
 document.addEventListener('mousemove', (p) => {
-  mouse[0] = ((p.pageX) - width/2)/wrld.zoom;
-  mouse[1] = ((p.pageY) - height/2)/wrld.zoom;
+  mouse[0] = ((p.pageX) - width/2)/wrlds[0].zoom;
+  mouse[1] = ((p.pageY) - height/2)/wrlds[0].zoom;
 }, false);
 
 document.onmousedown = function (e) {
   if (e.button == 0) {
-    wrld.main.vel.x = (wrld.main.pos.x - mouse[0])/-10;
-    wrld.main.vel.y = (wrld.main.pos.y - mouse[1])/-10;
+    for(let i = 0; i < wrlds.length; i++){
+      let x = Math.random()*wrlds[i].pool.size.x - wrlds[i].pool.size.x/2;
+      let y = Math.random()*wrlds[i].pool.size.y - wrlds[i].pool.size.y/2;
+      wrlds[i].main.vel.x = (wrlds[i].main.pos.x - x)/-10;
+      wrlds[i].main.vel.y = (wrlds[i].main.pos.y - y)/10;
+    }
     pressed = true;
   }
   if (e.button == 2) {
-    wrld.mode = (wrld.mode + 1) % 2;
+    mode = (mode + 1)%(wrlds.length+1);
   }
 };
 
@@ -40,13 +44,14 @@ function dotProduct(x1, y1, x2, y2) {
 }
 
 
-const pool = new Pool(new Vector(2300, 2300/2));
-const wrld = new World(pool);
-const nobjs = 1;
-const size = 16;
+const wrlds = [];
+for(let i = 0; i < 100; i++){
+  wrlds.push(new World());
+}
 const G = 9.81;
 const f = 0.01;
 
+let mode = wrlds.length;
 
 const frames = [];
 
@@ -72,10 +77,10 @@ function render(){
   context.font = "30px Arial";
   context.fillStyle = "white";
   context.fillText("FPS: " + frames.length, 10, 50);
-  context.fillText("Objects: " + (+wrld.objects.length) , 10, 100);
-  context.fillText("Zoom: " + wrld.zoom, 10, 150);
+  context.fillText("Objects: " + (+wrlds[0].objects.length) , 10, 100);
+  context.fillText("Zoom: " + wrlds[0].zoom, 10, 150);
   context.fillText("Mouse: " + mouse, 10, 200);
-  context.fillText("Mode: " + wrld.mode, 10, 250);
+  context.fillText("Mode: " + mode, 10, 250);
 
 
   //context.fillText("Time: " + time, 10, 300);
@@ -92,14 +97,21 @@ function render(){
     wrld.objects[6].vel.y = (wrld.objects[6].pos.y - y)/-25;
   }*/
 
-
-  wrld.update();
-  wrld.quadtree.reset();
-  for(let obj of wrld.objects){
-    wrld.quadtree.add(obj);
+  for(let i = 0; i < wrlds.length; i++){
+    wrlds[i].update();
+    wrlds[i].quadtree.reset();
+    for(let obj of wrlds[i].objects){
+      wrlds[i].quadtree.add(obj);
+    }
   }
 
-  wrld.render(context);
+  if(mode == wrlds.length){
+    for(let i = 0; i < wrlds.length; i++){
+      wrlds[i].render(context, i==0);
+    }
+  } else {
+    wrlds[mode].render(context, true);
+  }
 
 
   window.requestAnimationFrame(render);

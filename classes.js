@@ -66,17 +66,18 @@ class Quadtree {
 }
 
 class World{
-  constructor(pool){
+  constructor(){
     this.objects = [];
     this.main = null;
     this.mode = 0;
+    const pool = new Pool(new Vector(2300, 2300/2));
     this.pool = pool;
     this.offset = new Vector(width, height).mult(1/2).add(this.pool.size.clone().mult(-1/2));
     this.zoom = 0.4;
     this.quadtree = new Quadtree(new Vector(-pool.size.x/2, -pool.size.y/2), pool.size.clone(), 0);
 
     const size = 16
-    const nobjs = 1;
+    const nobjs = 5;
 
     let obj = new Obj(this, -pool.size.x/4, 0, size)
     obj.c = "red";
@@ -96,13 +97,16 @@ class World{
       }
     }
   }
-  render(ctx){
+  render(ctx, pool){
     ctx.save();
     ctx.translate(width/2, height/2);
     ctx.scale(this.zoom, this.zoom);
     ctx.fillStyle = "grey";
-    ctx.fillRect(-this.pool.size.x/2, -this.pool.size.y/2, this.pool.size.x, this.pool.size.y);
+    if(pool){
+      ctx.fillRect(-this.pool.size.x/2, -this.pool.size.y/2, this.pool.size.x, this.pool.size.y);
+    }
     //this.quadtree.render(ctx);
+    ctx.globalAlpha = 0.5;
     for(let i in this.objects){
       this.objects[i].render(ctx);
     }
@@ -117,7 +121,7 @@ class World{
       let r = this.objects[i].r + 10;
       let min = this.objects[i].pos.add(new Vector(-r, -r)); 
       let max = this.objects[i].pos.add(new Vector(r, r));
-      let objs = wrld.quadtree.getObjsIn(
+      let objs = this.quadtree.getObjsIn(
         min,
         max
       )
@@ -130,11 +134,11 @@ class World{
             let r1 = this.objects[i].r, r2 = obj.r;
             if(dist < r1 + r2){
               if(obj.type == 1) {
-                //this.objects[i].s = 1;
+                this.objects[i].s = 1;
                 continue
               }
               if(this.objects[i].type == 1) {
-                //obj.s = 1;
+                obj.s = 1;
                 continue
               }
               let o1 = this.objects[i];
@@ -264,7 +268,7 @@ class Hole extends Obj{
   update(){
 
   }
-  render(){
-
+  render(ctx){
+    super.render(ctx);
   }
 }
