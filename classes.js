@@ -68,15 +68,33 @@ class Quadtree {
 class World{
   constructor(pool){
     this.objects = [];
+    this.main = null;
+    this.mode = 0;
     this.pool = pool;
+    this.offset = new Vector(width, height).mult(1/2).add(this.pool.size.clone().mult(-1/2));
+    this.zoom = 0.4;
+    this.quadtree = new Quadtree(new Vector(-pool.size.x/2, -pool.size.y/2), pool.size.clone(), 0);
+
+    const size = 16
+    const nobjs = 1;
+
+    let obj = new Obj(this, -pool.size.x/4, 0, size)
+    obj.c = "red";
+    this.main = obj;
+    this.objects.push(obj);
+
+    for(let i = 0; i < nobjs ; i++){
+      for(let j = 0; j <= i; j++){ 
+        let obj = new Obj(this, pool.size.x*1/6+i*size*1.75,(i/2-(i-j))*size*2, size)
+        this.objects.push(obj)
+        this.quadtree.add(obj);
+      }
+    }
     for(let i = 0; i < 3; i++){
       for(let j = 0; j < 2; j++){
         this.objects.push(new Hole(this, (i-1)*this.pool.size.x/2, (j-1/2)*this.pool.size.y , 80))
       }
     }
-    this.offset = new Vector(width, height).mult(1/2).add(this.pool.size.clone().mult(-1/2));
-    this.zoom = 0.4;
-    this.quadtree = new Quadtree(new Vector(-pool.size.x/2, -pool.size.y/2), pool.size.clone(), 0);
   }
   render(ctx){
     ctx.save();
@@ -87,14 +105,6 @@ class World{
     //this.quadtree.render(ctx);
     for(let i in this.objects){
       this.objects[i].render(ctx);
-      /*if(this.objects[i].id == holyid && false){
-        ctx.strokeStyle = "blue";
-        ctx.lineWidth = 1;
-        let r = this.objects[i].r + 10;
-        let p = this.objects[i].pos.add(new Vector(-r, -r));
-        let p2 = this.objects[i].pos.add(new Vector(r, r));
-        ctx.strokeRect(p.x, p.y, p2.x - p.x, p2.y - p.y);
-      }*/
     }
     ctx.restore();
   }
@@ -104,8 +114,6 @@ class World{
     }
 
     for(let i in this.objects){
-      //let v = this.objects[i].pos.add(new Vector(-width/2, -height/2));
-      //this.objects[i].acc = this.objects[i].acc.add(v).mult(-0.001);
       let r = this.objects[i].r + 10;
       let min = this.objects[i].pos.add(new Vector(-r, -r)); 
       let max = this.objects[i].pos.add(new Vector(r, r));
@@ -113,75 +121,78 @@ class World{
         min,
         max
       )
-      for(let obj of objs){
-        if(this.objects[i].id != obj.id && obj.s != 1 && this.objects[i].s != 1){
-          let x1 = this.objects[i].pos.x, x2 = obj.pos.x;
-          let y1 = this.objects[i].pos.y, y2 = obj.pos.y;
-          let dist = Math.sqrt(Math.pow(x1-x2, 2) + Math.pow(y1-y2, 2));
-          let r1 = this.objects[i].r, r2 = obj.r;
-          if(dist < r1 + r2){
-            if(obj.type == 1) {
-              this.objects[i].s = 1;
-              console.log("IHIHIHIHIHIHIHI")
-              continue
+      if(this.mode == 0){
+        for(let obj of objs){
+          if(this.objects[i].id != obj.id && obj.s != 1 && this.objects[i].s != 1){
+            let x1 = this.objects[i].pos.x, x2 = obj.pos.x;
+            let y1 = this.objects[i].pos.y, y2 = obj.pos.y;
+            let dist = Math.sqrt(Math.pow(x1-x2, 2) + Math.pow(y1-y2, 2));
+            let r1 = this.objects[i].r, r2 = obj.r;
+            if(dist < r1 + r2){
+              if(obj.type == 1) {
+                //this.objects[i].s = 1;
+                continue
+              }
+              if(this.objects[i].type == 1) {
+                //obj.s = 1;
+                continue
+              }
+              let o1 = this.objects[i];
+              let o2 = obj;
+
+              let m21 = o2.m/o1.m;
+              let x21 = o2.pos.x - o1.pos.x;
+              let y21 = o2.pos.y - o1.pos.y;
+              let vx21 = o2.vel.x - o1.vel.x;
+              let vy21 = o2.vel.y - o1.vel.y;
+
+              let vx_cm = (o1.m*o1.vel.x + o2.m*o2.vel.x)/(o1.m+o2.m);
+              let vy_cm = (o1.m*o1.vel.y + o2.m*o2.vel.y)/(o1.m+o2.m);
+
+              if ( (vx21*x21 + vy21*y21) >= 0) continue;
+
+              let a=y21/x21;
+              let dvx2= -2*(vx21 +a*vy21)/((1+a*a)*(1+m21)) ;
+              o2.vel.x += dvx2;
+              o2.vel.y += a*dvx2;
+              o1.vel.x -= m21*dvx2;
+              o1.vel.y -= a*m21*dvx2;
             }
-            if(this.objects[i].type == 1) {
-              obj.s = 1;
-              continue
-            }
-            let o1 = this.objects[i];
-            let o2 = obj;
-
-            let m21 = o2.m/o1.m;
-            let x21 = o2.pos.x - o1.pos.x;
-            let y21 = o2.pos.y - o1.pos.y;
-            let vx21 = o2.vel.x - o1.vel.x;
-            let vy21 = o2.vel.y - o1.vel.y;
-
-            let vx_cm = (o1.m*o1.vel.x + o2.m*o2.vel.x)/(o1.m+o2.m);
-            let vy_cm = (o1.m*o1.vel.y + o2.m*o2.vel.y)/(o1.m+o2.m);
-
-            if ( (vx21*x21 + vy21*y21) >= 0) continue;
-
-            let a=y21/x21;
-            let dvx2= -2*(vx21 +a*vy21)/((1+a*a)*(1+m21)) ;
-            o2.vel.x += dvx2;
-            o2.vel.y += a*dvx2;
-            o1.vel.x -= m21*dvx2;
-            o1.vel.y -= a*m21*dvx2;
           }
         }
       }
-      /*for(let j in this.objects){
-        if(i != j){
-          let x1 = this.objects[i].pos.x, x2 = this.objects[j].pos.x;
-          let y1 = this.objects[i].pos.y, y2 = this.objects[j].pos.y;
-          let dist = Math.sqrt(Math.pow(x1-x2, 2) + Math.pow(y1-y2, 2));
-          let r1 = this.objects[i].r, r2 = this.objects[j].r;
-          if(dist < r1 + r2){
-            let o1 = this.objects[i];
-            let o2 = this.objects[j];
+      else {
+        for(let j in this.objects){
+          if(i != j){
+            let x1 = this.objects[i].pos.x, x2 = this.objects[j].pos.x;
+            let y1 = this.objects[i].pos.y, y2 = this.objects[j].pos.y;
+            let dist = Math.sqrt(Math.pow(x1-x2, 2) + Math.pow(y1-y2, 2));
+            let r1 = this.objects[i].r, r2 = this.objects[j].r;
+            if(dist < r1 + r2){
+              let o1 = this.objects[i];
+              let o2 = this.objects[j];
 
-            let m21 = o2.m/o1.m;
-            let x21 = o2.pos.x - o1.pos.x;
-            let y21 = o2.pos.y - o1.pos.y;
-            let vx21 = o2.vel.x - o1.vel.x;
-            let vy21 = o2.vel.y - o1.vel.y;
+              let m21 = o2.m/o1.m;
+              let x21 = o2.pos.x - o1.pos.x;
+              let y21 = o2.pos.y - o1.pos.y;
+              let vx21 = o2.vel.x - o1.vel.x;
+              let vy21 = o2.vel.y - o1.vel.y;
 
-            let vx_cm = (o1.m*o1.vel.x + o2.m*o2.vel.x)/(o1.m+o2.m);
-            let vy_cm = (o1.m*o1.vel.y + o2.m*o2.vel.y)/(o1.m+o2.m);
+              let vx_cm = (o1.m*o1.vel.x + o2.m*o2.vel.x)/(o1.m+o2.m);
+              let vy_cm = (o1.m*o1.vel.y + o2.m*o2.vel.y)/(o1.m+o2.m);
 
-            if ( (vx21*x21 + vy21*y21) >= 0) break;
+              if ( (vx21*x21 + vy21*y21) >= 0) break;
 
-            let a=y21/x21;
-            let dvx2= -2*(vx21 +a*vy21)/((1+a*a)*(1+m21)) ;
-            o2.vel.x += dvx2;
-            o2.vel.y += a*dvx2;
-            o1.vel.x -= m21*dvx2;
-            o1.vel.y -= a*m21*dvx2;
+              let a=y21/x21;
+              let dvx2= -2*(vx21 +a*vy21)/((1+a*a)*(1+m21)) ;
+              o2.vel.x += dvx2;
+              o2.vel.y += a*dvx2;
+              o1.vel.x -= m21*dvx2;
+              o1.vel.y -= a*m21*dvx2;
+            }
           }
         }
-      }*/
+      }
     }
   }
 }
@@ -251,6 +262,9 @@ class Hole extends Obj{
     this.type = 1;
   }
   update(){
+
+  }
+  render(){
 
   }
 }
