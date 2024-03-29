@@ -21,15 +21,21 @@ document.addEventListener('mousemove', (p) => {
 document.onmousedown = function (e) {
   if (e.button == 0) {
     for(let i = 0; i < wrlds.length; i++){
-      let x = Math.random()*wrlds[i].pool.size.x - wrlds[i].pool.size.x/2;
-      let y = Math.random()*wrlds[i].pool.size.y - wrlds[i].pool.size.y/2;
+      let x = Math.floor((Math.random()*wrlds[i].pool.size.x - wrlds[i].pool.size.x/2)*100)/100;
+      let y = Math.floor((Math.random()*wrlds[i].pool.size.y - wrlds[i].pool.size.y/2)*100)/100;
       wrlds[i].main.vel.x = (wrlds[i].main.pos.x - x)/-10;
       wrlds[i].main.vel.y = (wrlds[i].main.pos.y - y)/10;
+	  wrlds[i].lastHits.push([x, y]);
     }
     pressed = true;
   }
   if (e.button == 2) {
-    mode = (mode + 1)%(wrlds.length+1);
+	let max = wrlds.reduce((acc, wrld, i) => {let c = wrld.objects.filter((obj) => obj.s==1).length;if(c > acc[1] && wrld.main.s == 0){return [i, c]}else{return acc}}, [0, 0])
+    let parent = wrlds[max[0]];
+    console.log(max)
+	for(let i = 0; i < 100; i ++){
+      if(i != max[0]) wrlds[i] = parent.clone();
+	}
   }
 };
 
@@ -97,12 +103,14 @@ function render(){
     wrld.objects[6].vel.y = (wrld.objects[6].pos.y - y)/-25;
   }*/
 
-  for(let i = 0; i < wrlds.length; i++){
-    wrlds[i].update();
-    wrlds[i].quadtree.reset();
-    for(let obj of wrlds[i].objects){
-      wrlds[i].quadtree.add(obj);
-    }
+  for(let k = 0; k < 15; k++){
+	  for(let i = 0; i < wrlds.length; i++){
+		wrlds[i].update();
+		wrlds[i].quadtree.reset();
+		for(let obj of wrlds[i].objects){
+		  wrlds[i].quadtree.add(obj);
+		}
+	  }
   }
 
   if(mode == wrlds.length){

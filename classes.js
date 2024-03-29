@@ -88,7 +88,7 @@ class World{
       for(let j = 0; j <= i; j++){ 
         let obj = new Obj(this, pool.size.x*1/6+i*size*1.75,(i/2-(i-j))*size*2, size)
         this.objects.push(obj)
-        this.quadtree.add(obj);
+        //this.quadtree.add(obj);
       }
     }
     for(let i = 0; i < 3; i++){
@@ -96,6 +96,7 @@ class World{
         this.objects.push(new Hole(this, (i-1)*this.pool.size.x/2, (j-1/2)*this.pool.size.y , 80))
       }
     }
+	this.lastHits = [];
   }
   render(ctx, pool){
     ctx.save();
@@ -199,6 +200,16 @@ class World{
       }
     }
   }
+  clone(){
+	let cp = new World();
+	cp.objects = [];
+	for(let i in this.objects){
+		cp.objects.push(this.objects[i].clone());
+	}
+	cp.main = cp.objects[0];
+    cp.lastHits =  [...this.lastHits];
+	return cp;
+  }
 }
 
 class Pool{
@@ -222,6 +233,9 @@ class Vector{
   mult(s){
     return new Vector(this.x*s, this.y*s);
   }
+  norm(){
+	return this.x*this.x + this.y*this.y;
+  }
 }
 
 
@@ -239,14 +253,17 @@ class Obj{
     this.type = 0;
   }
   render(ctx){
+    if(this.s == 0){
     ctx.beginPath();
     ctx.arc(this.pos.x, this.pos.y, this.r, 0, 2*Math.PI);
     ctx.fillStyle = (this.s==1 )?"blue": this.c;
     ctx.fill();
     ctx.closePath();
+	}
   }
   update(){
     this.vel = this.vel.mult(0.99);
+    if(this.vel.norm() < 0.01) this.vel = new Vector(0,0);
     this.acc.add(new Vector(
       -this.m * G * f * Math.cos(Math.atan2(this.vel.y, this.vel.x)),
       -this.m * G * f * Math.sin(Math.atan2(this.vel.y, this.vel.x))
@@ -258,6 +275,14 @@ class Obj{
     if(this.pos.x+this.r > this.world.pool.size.x/2) this.vel.x = -Math.abs(this.vel.x);
     if(this.pos.y-this.r < -this.world.pool.size.y/2) this.vel.y = Math.abs(this.vel.y);
     if(this.pos.y+this.r > this.world.pool.size.y/2) this.vel.y = -Math.abs(this.vel.y);
+  }
+  
+  clone(){
+	let cp = new this.constructor(this.world, this.pos.x, this.pos.y, this.r);
+	cp.c = this.c;
+	cp.s = this.s;
+	cp.type = this.type;
+	return cp;
   }
 }
 class Hole extends Obj{
