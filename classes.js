@@ -76,7 +76,7 @@ class World{
     this.zoom = 0.4;
     this.quadtree = new Quadtree(new Vector(-pool.size.x/2, -pool.size.y/2), pool.size.clone(), 0);
 
-    const size = 49;
+    const size = 39;
     const nobjs = 5;
 
     let obj = new Obj(this, -pool.size.x/4, 0, size)
@@ -98,7 +98,7 @@ class World{
     }
 	this.lastHits = [];
   }
-  render(ctx, pool){
+  render(ctx, pool, full){
     ctx.save();
     ctx.translate(width/2, height/2);
     ctx.scale(this.zoom, this.zoom);
@@ -107,7 +107,9 @@ class World{
       ctx.fillRect(-this.pool.size.x/2, -this.pool.size.y/2, this.pool.size.x, this.pool.size.y);
     }
     //this.quadtree.render(ctx);
-    ctx.globalAlpha = 0.5;
+    if(!full){
+      ctx.globalAlpha = 0.5;
+    }
     for(let i in this.objects){
       this.objects[i].render(ctx);
     }
