@@ -103,7 +103,7 @@ function render(){
     wrld.objects[6].vel.y = (wrld.objects[6].pos.y - y)/-25;
   }*/
 
-  for(let k = 0; k < 15; k++){
+  for(let k = 0; k < 1; k++){
 	  for(let i = 0; i < wrlds.length; i++){
 		wrlds[i].update();
 		wrlds[i].quadtree.reset();

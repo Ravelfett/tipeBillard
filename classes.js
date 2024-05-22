@@ -76,7 +76,7 @@ class World{
     this.zoom = 0.4;
     this.quadtree = new Quadtree(new Vector(-pool.size.x/2, -pool.size.y/2), pool.size.clone(), 0);
 
-    const size = 16
+    const size = 49;
     const nobjs = 5;
 
     let obj = new Obj(this, -pool.size.x/4, 0, size)
@@ -174,6 +174,7 @@ class World{
             let dist = Math.sqrt(Math.pow(x1-x2, 2) + Math.pow(y1-y2, 2));
             let r1 = this.objects[i].r, r2 = this.objects[j].r;
             if(dist < r1 + r2){
+              // equations from https://www.plasmaphysics.org.uk/collision2d.htm
               let o1 = this.objects[i];
               let o2 = this.objects[j];
 
