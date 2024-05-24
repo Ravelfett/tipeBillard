@@ -66,7 +66,7 @@ class Quadtree {
 }
 
 class World{
-  constructor(){
+  constructor(size, startingPos = true){
     this.objects = [];
     this.main = null;
     this.mode = 0;
@@ -76,19 +76,20 @@ class World{
     this.zoom = 0.4;
     this.quadtree = new Quadtree(new Vector(-pool.size.x/2, -pool.size.y/2), pool.size.clone(), 0);
 
-    const size = 39;
     const nobjs = 5;
 
-    let obj = new Obj(this, -pool.size.x/4, 0, size)
-    obj.c = "red";
-    this.main = obj;
-    this.objects.push(obj);
+      let obj = new Obj(this, -pool.size.x/4, 0, size)
+      obj.c = "white";
+      this.main = obj;
+      this.objects.push(obj);
 
-    for(let i = 0; i < nobjs ; i++){
-      for(let j = 0; j <= i; j++){ 
-        let obj = new Obj(this, pool.size.x*1/6+i*size*1.75,(i/2-(i-j))*size*2, size)
-        this.objects.push(obj)
-        //this.quadtree.add(obj);
+    if(startingPos){
+      for(let i = 0; i < nobjs ; i++){
+        for(let j = 0; j <= i; j++){ 
+          let obj = new Obj(this, pool.size.x*1/6+i*size*1.75,(i/2-(i-j))*size*2, size)
+          this.objects.push(obj)
+          //this.quadtree.add(obj);
+        }
       }
     }
     for(let i = 0; i < 3; i++){
@@ -96,13 +97,13 @@ class World{
         this.objects.push(new Hole(this, (i-1)*this.pool.size.x/2, (j-1/2)*this.pool.size.y , 80))
       }
     }
-	this.lastHits = [];
+	  this.lastHits = [];
   }
   render(ctx, pool, full){
     ctx.save();
     ctx.translate(width/2, height/2);
     ctx.scale(this.zoom, this.zoom);
-    ctx.fillStyle = "grey";
+    ctx.fillStyle = "rgba(92, 255, 51)";
     if(pool){
       ctx.fillRect(-this.pool.size.x/2, -this.pool.size.y/2, this.pool.size.x, this.pool.size.y);
     }
@@ -249,7 +250,9 @@ class Obj{
     this.pos = new Vector(x, y);
     this.vel = new Vector(0, 0);
     this.acc = new Vector(0, 0);
-    this.c = "white";
+    //set this.c to a random hsl color
+    //this.c = "hsl(" + 360 * Math.random() + ', 100%, 50%)';
+    this.c = "red"
     this.r = r;
     this.s = 0;
     this.m = 0.17;
@@ -265,19 +268,23 @@ class Obj{
 	}
   }
   update(){
+
+    let coefRest = 1;
+
     this.vel = this.vel.mult(0.99);
     if(this.vel.norm() < 0.01) this.vel = new Vector(0,0);
-    this.acc.add(new Vector(
+    /*this.acc = this.acc.add(new Vector(
       -this.m * G * f * Math.cos(Math.atan2(this.vel.y, this.vel.x)),
       -this.m * G * f * Math.sin(Math.atan2(this.vel.y, this.vel.x))
-    ))
+    ))*/
     this.vel = this.vel.add(this.acc);
     this.pos = this.pos.add(this.vel);
     this.acc = new Vector(0, 0);
-    if(this.pos.x-this.r < -this.world.pool.size.x/2) this.vel.x = Math.abs(this.vel.x);
-    if(this.pos.x+this.r > this.world.pool.size.x/2) this.vel.x = -Math.abs(this.vel.x);
-    if(this.pos.y-this.r < -this.world.pool.size.y/2) this.vel.y = Math.abs(this.vel.y);
-    if(this.pos.y+this.r > this.world.pool.size.y/2) this.vel.y = -Math.abs(this.vel.y);
+
+    if(this.pos.x-this.r < -this.world.pool.size.x/2) this.vel.x = Math.abs(this.vel.x)*coefRest;
+    if(this.pos.x+this.r > this.world.pool.size.x/2) this.vel.x = -Math.abs(this.vel.x)*coefRest;
+    if(this.pos.y-this.r < -this.world.pool.size.y/2) this.vel.y = Math.abs(this.vel.y)*coefRest;
+    if(this.pos.y+this.r > this.world.pool.size.y/2) this.vel.y = -Math.abs(this.vel.y)*coefRest;
   }
   
   clone(){
@@ -285,6 +292,7 @@ class Obj{
 	cp.c = this.c;
 	cp.s = this.s;
 	cp.type = this.type;
+  cp.vel = this.vel.clone();
 	return cp;
   }
 }
@@ -292,6 +300,7 @@ class Hole extends Obj{
   constructor(world, x, y, r){
     super(world, x, y, r);
     this.type = 1;
+    this.c= "black";
   }
   update(){
 

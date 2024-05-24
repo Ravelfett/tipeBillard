@@ -20,6 +20,11 @@ document.addEventListener('mousemove', (p) => {
 
 document.onmousedown = function (e) {
   if (e.button == 0) {
+    let x = mouse[0];
+    let y = mouse[1];
+    wrlds[0].main.vel.x = (wrlds[0].main.pos.x - x)/-10;
+    wrlds[0].main.vel.y = (wrlds[0].main.pos.y - y)/-10;
+
     /*for(let i = 0; i < wrlds.length; i++){
       let x = Math.floor((Math.random()*wrlds[i].pool.size.x - wrlds[i].pool.size.x/2)*100)/100;
       let y = Math.floor((Math.random()*wrlds[i].pool.size.y - wrlds[i].pool.size.y/2)*100)/100;
@@ -67,11 +72,21 @@ function dotProduct(x1, y1, x2, y2) {
 
 function playRandomMove(){
   for(let i = 0; i < wrlds.length; i++){
-    let x = Math.floor((Math.random()*wrlds[i].pool.size.x - wrlds[i].pool.size.x/2)*100)/100;
+
+    //shoot the main ball in a random direction with a random speed uniformely in a circle
+    let angle = Math.random()*2*Math.PI;
+    let speed = Math.random()*70+30;
+    let x = Math.floor(Math.cos(angle)*speed*100)/100;
+    let y = Math.floor(Math.sin(angle)*speed*100)/100;
+    wrlds[i].main.vel.x = x;
+    wrlds[i].main.vel.y = y;
+    wrlds[i].lastHits.push([x, y]);
+
+    /*let x = Math.floor((Math.random()*wrlds[i].pool.size.x - wrlds[i].pool.size.x/2)*100)/100;
     let y = Math.floor((Math.random()*wrlds[i].pool.size.y - wrlds[i].pool.size.y/2)*100)/100;
     wrlds[i].main.vel.x = (wrlds[i].main.pos.x - x)/-10;
     wrlds[i].main.vel.y = (wrlds[i].main.pos.y - y)/10;
-    wrlds[i].lastHits.push([x, y]);
+    wrlds[i].lastHits.push([x, y]);*/
   }
 }
 
@@ -84,19 +99,35 @@ function setupWorldCopies(){
       if(i != max[0]) wrlds[i] = parent.clone();
 	}
 }
-"[[1110.87,128.88],[502.19,368.13],[-1142.79,-463.41],[104.12,-192.09],[724.74,-432.52],[1101.45,-311.02]]" 
 
 const wrlds = [];
 
-const nb = 10;
-let rec = false;
+const nb = 50;
+let rec = 1;
 let cshot = 0;
+let dshot = shots.length;
 
-for(let i = 0; i < nb; i++){
-  wrlds.push(new World());
+if(false){
+  const s = 49;
+  let wrld = new World(s, false);
+  wrld.objects.push(new Obj(wrld, 0, 0, s));
+  wrld.main.pos.x = 1100;
+  wrld.main.vel.x = -50;
+  wrlds.push(wrld);
+
+  for(let i = 0; i < nb; i++){
+    let newWorld = wrld.clone();
+    newWorld.main.vel.y = Math.random()*4 - 2;
+    wrlds.push(newWorld);
+  }
+}else{
+  for(let i = 0; i < nb; i++){
+    let wrld = new World(22);
+    wrlds.push(wrld);
+  }
 }
 const G = 9.81;
-const f = 0.01;
+const f = 0.5;
 
 let mode = wrlds.length;
 
@@ -138,32 +169,32 @@ function render(){
 
   //context.fillText("Time: " + time, 10, 300);
 
-  if(rec){
+  if(rec == 0){
     let allStopped = wrlds.every((wrld) => wrld.objects.every((obj) => obj.vel.x == 0 && obj.vel.y == 0));
     let nbofdone = wrlds[0].objects.filter((obj)=>{return obj.type == 0 && obj.s == 1}).length;
     if(nbofdone==16){
       console.log(wrlds[0].lastHits);
-      rec = false;
+      rec = 2;
       update = false;
     }
     if(allStopped){
       setupWorldCopies();
       playRandomMove();
     }
-  }else{
+  }else if(rec == 1){
     let allStopped = wrlds.every((wrld) => wrld.objects.every((obj) => obj.vel.x == 0 && obj.vel.y == 0));
-    if(allStopped && cshot < 3){
+    if(allStopped && cshot < dshot){
       let x = shots[cshot][0];
       let y = shots[cshot][1];
       for(let i = 1; i < wrlds.length; i++){
-        let fe = cshot == 2? 1: 0;
+        let fe = (cshot == (dshot-1)) ? 0.2: 0;
         let xerror = Math.random()*fe - fe/2;
         let yerror = Math.random()*fe - fe/2;
-        wrlds[i].main.vel.x = (wrlds[i].main.pos.x - x + xerror)/-10;
-        wrlds[i].main.vel.y = (wrlds[i].main.pos.y - y + yerror)/10;
+        wrlds[i].main.vel.x = x + xerror;
+        wrlds[i].main.vel.y = y + yerror;
       }
-      wrlds[0].main.vel.x = (wrlds[0].main.pos.x - x)/-10;
-      wrlds[0].main.vel.y = (wrlds[0].main.pos.y - y)/10;
+      wrlds[0].main.vel.x = x;
+      wrlds[0].main.vel.y = y;
       cshot++;
     }
   }
@@ -184,11 +215,13 @@ function render(){
   if(update){
     for(let k = 0; k < 1; k++){
       for(let i = 0; i < wrlds.length; i++){
-      wrlds[i].update();
-      wrlds[i].quadtree.reset();
-      for(let obj of wrlds[i].objects){
-        wrlds[i].quadtree.add(obj);
-      }
+        wrlds[i].update();
+        wrlds[i].quadtree.reset();
+        for(let obj of wrlds[i].objects){
+          if(obj.s != 1){
+            wrlds[i].quadtree.add(obj);
+          }
+        }
       }
     }
 
