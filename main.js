@@ -102,8 +102,8 @@ function setupWorldCopies(){
 
 const wrlds = [];
 
-const nb = 50;
-let rec = 1;
+const nb = 1;
+let rec = 2;
 let cshot = 0;
 let dshot = shots.length;
 
@@ -126,8 +126,6 @@ if(false){
     wrlds.push(wrld);
   }
 }
-const G = 9.81;
-const f = 0.5;
 
 let mode = wrlds.length;
 
@@ -166,6 +164,8 @@ function render(){
   context.fillText("Mouse: " + mouse, 10, 200);
   context.fillText("Mode: " + mode, 10, 250);
 
+  context.fillText("vel: " + wrlds[0].main.vel.toString(), 10, 300);
+  context.fillText("rvel: " + wrlds[0].main.rvel.toString(), 10, 350);
 
   //context.fillText("Time: " + time, 10, 300);
 

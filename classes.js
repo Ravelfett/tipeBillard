@@ -30,9 +30,9 @@ class Quadtree {
         let s = this.size.mult(0.5);
         this.grid = [
           new Quadtree(this.pos, s, this.d+1),
-          new Quadtree(this.pos.add(new Vector(s.x, 0)), s, this.d+1),
-          new Quadtree(this.pos.add(new Vector(0, s.y)), s, this.d+1),
-          new Quadtree(this.pos.add(new Vector(s.x, s.y)), s, this.d+1),
+          new Quadtree(this.pos.add(new Vector(s.x, 0, 0)), s, this.d+1),
+          new Quadtree(this.pos.add(new Vector(0, s.y, 0)), s, this.d+1),
+          new Quadtree(this.pos.add(new Vector(s.x, s.y, 0)), s, this.d+1),
         ]
         for(let o of this.objs){
           this.add(o);
@@ -70,11 +70,11 @@ class World{
     this.objects = [];
     this.main = null;
     this.mode = 0;
-    const pool = new Pool(new Vector(2300, 2300/2));
+    const pool = new Pool(new Vector(2300, 2300/2, 0));
     this.pool = pool;
-    this.offset = new Vector(width, height).mult(1/2).add(this.pool.size.clone().mult(-1/2));
+    this.offset = new Vector(width, height, 0).mult(1/2).add(this.pool.size.clone().mult(-1/2));
     this.zoom = 0.4;
-    this.quadtree = new Quadtree(new Vector(-pool.size.x/2, -pool.size.y/2), pool.size.clone(), 0);
+    this.quadtree = new Quadtree(new Vector(-pool.size.x/2, -pool.size.y/2, 0), pool.size.clone(), 0);
 
     const nobjs = 5;
 
@@ -123,8 +123,8 @@ class World{
 
     for(let i in this.objects){
       let r = this.objects[i].r + 10;
-      let min = this.objects[i].pos.add(new Vector(-r, -r)); 
-      let max = this.objects[i].pos.add(new Vector(r, r));
+      let min = this.objects[i].pos.add(new Vector(-r, -r, 0)); 
+      let max = this.objects[i].pos.add(new Vector(r, r, 0));
       let objs = this.quadtree.getObjsIn(
         min,
         max
@@ -224,32 +224,45 @@ class Pool{
 }
 
 class Vector{
-  constructor(x, y){
+  constructor(x, y, z){
     this.x = x;
     this.y = y;
+    this.z = z;
+  }
+  toString(){
+    return `(${this.x}, ${this.y}, ${this.z})`; 
   }
   clone(){
-    return new Vector(this.x, this.y);
+    return new Vector(this.x, this.y, this.z);
   }
   add(v){
-    return new Vector(this.x+v.x, this.y+v.y);
+    return new Vector(this.x+v.x, this.y+v.y, this.z+v.z);
   }
   mult(s){
-    return new Vector(this.x*s, this.y*s);
+    return new Vector(this.x*s, this.y*s, this.z*s);
+  }
+  cross(v){
+    return new Vector(this.y*v.z - this.z*v.y, this.z*v.x - this.x*v.z, this.x*v.y - this.y*v.x);
   }
   norm(){
-	return this.x*this.x + this.y*this.y;
+	return Math.sqrt(this.x*this.x + this.y*this.y + this.z*this.z);
   }
 }
 
+function refresh() {
+  //I = (2 / 5) * m * R * R
+}
 
 class Obj{
   constructor(world, x, y, r){
     this.world = world;
     this.id = Math.random();
-    this.pos = new Vector(x, y);
-    this.vel = new Vector(0, 0);
-    this.acc = new Vector(0, 0);
+    this.pos = new Vector(x, y, 0);
+    this.vel = new Vector(0, 0, 0);
+    this.acc = new Vector(0, 0, 0);
+
+    this.rvel = new Vector(0, 1, 1);
+
     //set this.c to a random hsl color
     //this.c = "hsl(" + 360 * Math.random() + ', 100%, 50%)';
     this.c = "red"
@@ -260,40 +273,62 @@ class Obj{
   }
   render(ctx){
     if(this.s == 0){
-    ctx.beginPath();
-    ctx.arc(this.pos.x, this.pos.y, this.r, 0, 2*Math.PI);
-    ctx.fillStyle = (this.s==1 )?"blue": this.c;
-    ctx.fill();
-    ctx.closePath();
-	}
+      ctx.beginPath();
+      ctx.arc(this.pos.x, this.pos.y, this.r, 0, 2*Math.PI);
+      ctx.fillStyle = (this.s==1 )?"blue": this.c;
+      ctx.fill();
+      ctx.closePath();
+    }
   }
   update(){
 
-    let coefRest = 1;
+    const mu = 0.9;
+    const G = 9.81;
+    
+    const Mz = ((mu * this.m * G * 2) / 3) * 0.024;
+    const Mxy = (7 / (5 * Math.sqrt(2))) * this.r * mu * this.m * G
 
-    this.vel = this.vel.mult(0.99);
-    if(this.vel.norm() < 0.01) this.vel = new Vector(0,0);
+    // help from https://github.com/tailuge/billiards/blob/master/src/model/physics/physics.ts
+    const z = this.rvel.z;
+    this.rvel = (new Vector(0, 0, 1)).cross(this.vel).mult(1/this.r);
+    this.rvel.z = z;
+   
+
+    const mag = new Vector(this.rvel.x, this.rvel.y, 0).norm();
+    if(mag > 0.001){
+      const k = ((5 / 7) * Mxy) / ((this.m * this.r) * mag);
+      const kw = ((5 / 7) * Mxy) / ((this.m * this.r * this.r) * mag );
+      //console.log(kw, Mxy, this.m, R, mag, (5/7)*Mxy, this.m*R*R, mag)
+      this.vel = this.vel.add(new Vector(-k * this.rvel.y, k * this.rvel.x, 0).mult(1/60));
+      this.rvel = this.rvel.add(new Vector(
+        -kw * this.rvel.x,
+        -kw * this.rvel.y,
+        -(5 / 2) * (Mz / (this.m * this.r * this.r)) * Math.sign(this.rvel.z)
+      ).mult(1/60))
+    }
+
+
+    //this.vel = this.vel.mult(0.99);
+    //if(this.vel.norm() < 0.1) {this.vel = new Vector(0,0,0);this.rvel = new Vector(0, 0, 0)}
     /*this.acc = this.acc.add(new Vector(
       -this.m * G * f * Math.cos(Math.atan2(this.vel.y, this.vel.x)),
       -this.m * G * f * Math.sin(Math.atan2(this.vel.y, this.vel.x))
     ))*/
-    this.vel = this.vel.add(this.acc);
     this.pos = this.pos.add(this.vel);
-    this.acc = new Vector(0, 0);
 
-    if(this.pos.x-this.r < -this.world.pool.size.x/2) this.vel.x = Math.abs(this.vel.x)*coefRest;
-    if(this.pos.x+this.r > this.world.pool.size.x/2) this.vel.x = -Math.abs(this.vel.x)*coefRest;
-    if(this.pos.y-this.r < -this.world.pool.size.y/2) this.vel.y = Math.abs(this.vel.y)*coefRest;
-    if(this.pos.y+this.r > this.world.pool.size.y/2) this.vel.y = -Math.abs(this.vel.y)*coefRest;
+    if(this.pos.x-this.r < -this.world.pool.size.x/2) this.vel.x = Math.abs(this.vel.x);
+    if(this.pos.x+this.r > this.world.pool.size.x/2) this.vel.x = -Math.abs(this.vel.x);
+    if(this.pos.y-this.r < -this.world.pool.size.y/2) this.vel.y = Math.abs(this.vel.y);
+    if(this.pos.y+this.r > this.world.pool.size.y/2) this.vel.y = -Math.abs(this.vel.y);
   }
   
   clone(){
-	let cp = new this.constructor(this.world, this.pos.x, this.pos.y, this.r);
-	cp.c = this.c;
-	cp.s = this.s;
-	cp.type = this.type;
-  cp.vel = this.vel.clone();
-	return cp;
+    let cp = new this.constructor(this.world, this.pos.x, this.pos.y, this.r);
+    cp.c = this.c;
+    cp.s = this.s;
+    cp.type = this.type;
+    cp.vel = this.vel.clone();
+    return cp;
   }
 }
 class Hole extends Obj{
