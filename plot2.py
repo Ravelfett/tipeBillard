@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Load the Excel file
-file_path = 'out.xls'
+file_path = '4kvid.xls'
 df = pd.read_excel(file_path)
 
 # Assume that the columns for x and y positions are the 5th and 6th columns (index 4 and 5)
@@ -28,6 +28,7 @@ for i in range(1, len(df)):
     if df[time_col].iloc[i] - df[time_col].iloc[i - 1] > 1:
         segments.append(cut(df, df[time_col].iloc[last], df[time_col].iloc[i - 1]))
         last = i
+segments.append(cut(df, df[time_col].iloc[last], df[time_col].iloc[len(df) - 1]))
 
 
 print(segments[0])
@@ -52,28 +53,17 @@ for segment in segments:
 
 
 # Plot all segments
+
+step = 2;
+
 plt.figure()
 for segment in segments:
     times, speeds = calculate_speed(segment)
-    plt.plot(times, speeds)
+    plt.plot(times[::step], 60*speeds[::step])
 
 
-#Code to separate the different periods with a semi transparent red dashed line
-plt.axvline(x=9.5, color='r', linestyle='--', alpha=0.3)
-plt.axvline(x=16, color='r', linestyle='--', alpha=0.3)
-
-
-# Calculate positions for the labels
-y_max = max(max(calculate_speed(segment)[1]) for segment in segments)
-
-# Code to label the different periods
-fsize = 10
-plt.text(2, y_max, 'roulement', fontsize=fsize, color='black')
-plt.text(9.5, y_max, 'glissement', fontsize=fsize, color='black')
-plt.text(19, y_max, 'roulement apres collision', fontsize=fsize, color='black')
-
-plt.xlabel('Temps')
-plt.ylabel('Vitesse')
-plt.title('Vitesse en fonction du temps pour differents lancés')
+plt.xlabel('Temps (frames)')
+plt.ylabel('Vitesse (cm/s)')
+plt.title('Vitesse en fonction du temps pour plusieurs lancés')
 plt.show()
 

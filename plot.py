@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # Define the file path
-file_path = 'out.xls'
+file_path = '4kvid.xls'
 
 # Read the first 1000 rows of the Excel file
 df = pd.read_excel(file_path, nrows=1000)

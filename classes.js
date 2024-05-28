@@ -66,14 +66,15 @@ class Quadtree {
 }
 
 class World{
-  constructor(size, startingPos = true){
+  constructor(size, startingPos = true, pool){
     this.objects = [];
     this.main = null;
     this.mode = 0;
-    const pool = new Pool(new Vector(2300, 2300/2, 0));
+    this.zoom = 20;
+    //const pool = new Pool(new Vector(50, 50/2, 0), this.zoom);
     this.pool = pool;
+    this.size = size;
     this.offset = new Vector(width, height, 0).mult(1/2).add(this.pool.size.clone().mult(-1/2));
-    this.zoom = 0.4;
     this.quadtree = new Quadtree(new Vector(-pool.size.x/2, -pool.size.y/2, 0), pool.size.clone(), 0);
 
     const nobjs = 5;
@@ -94,7 +95,7 @@ class World{
     }
     for(let i = 0; i < 3; i++){
       for(let j = 0; j < 2; j++){
-        this.objects.push(new Hole(this, (i-1)*this.pool.size.x/2, (j-1/2)*this.pool.size.y , 80))
+        this.objects.push(new Hole(this, (i-1)*this.pool.size.x/2, (j-1/2)*this.pool.size.y , size*1.9))
       }
     }
 	  this.lastHits = [];
@@ -105,7 +106,7 @@ class World{
     ctx.scale(this.zoom, this.zoom);
     ctx.fillStyle = "rgba(92, 255, 51)";
     if(pool){
-      ctx.fillRect(-this.pool.size.x/2, -this.pool.size.y/2, this.pool.size.x, this.pool.size.y);
+      this.pool.render(ctx);
     }
     //this.quadtree.render(ctx);
     if(!full){
@@ -113,12 +114,13 @@ class World{
     }
     for(let i in this.objects){
       this.objects[i].render(ctx);
+      this.pool.trace(this.objects[i]);
     }
     ctx.restore();
   }
-  update(){
+  update(dt){
     for(let i in this.objects){
-      this.objects[i].update();
+      this.objects[i].update(dt);
     }
 
     for(let i in this.objects){
@@ -205,21 +207,51 @@ class World{
     }
   }
   clone(){
-	let cp = new World();
-	cp.objects = [];
-	for(let i in this.objects){
-		cp.objects.push(this.objects[i].clone());
-	}
-	cp.main = cp.objects[0];
+    let cp = new World(this.size, false, this.pool);
+    cp.objects = [];
+    for(let i in this.objects){
+      cp.objects.push(this.objects[i].clone());
+    }
+    cp.main = cp.objects[0];
     cp.lastHits =  [...this.lastHits];
-	return cp;
+    return cp;
   }
 }
 
 class Pool{
-  constructor(size){
+  constructor(size, zoom){
     this.size = size;
     this.holes = [];
+    this.objects = {};
+    this.res = 1/2;
+    this.zoom = zoom;
+    this.canvas = new OffscreenCanvas(this.zoom*size.x*this.res, this.zoom*size.y*this.res);
+    let ctx = this.canvas.getContext('2d');
+    this.reset();
+  }
+  render(ctx){
+    ctx.drawImage(this.canvas, -this.size.x/2, -this.size.y/2, this.size.x, this.size.y);
+    //ctx.fillRect(-this.size.x/2, -this.size.y/2, this.size.x, this.size.y);
+  }
+  reset(){
+    let ctx = this.canvas.getContext('2d');
+    ctx.fillStyle = "gray";
+    ctx.fillRect(0, 0, this.size.x*this.zoom*this.res, this.size.y*this.zoom*this.res);
+  }
+  trace(object){
+    if(object.s == 1) return;
+    if(object.id in this.objects){
+      let ctx = this.canvas.getContext('2d');
+      ctx.beginPath();
+      ctx.moveTo((this.objects[object.id].x+this.size.x/2)*this.res*this.zoom, (this.objects[object.id].y+this.size.y/2)*this.res*this.zoom);
+      ctx.lineTo((object.pos.x+this.size.x/2)*this.zoom*this.res, (object.pos.y+this.size.y/2)*this.zoom*this.res);
+      ctx.strokeStyle = object.c;
+      ctx.lineWidth = 2*this.res;
+      ctx.stroke();
+      ctx.closePath();
+    }
+    this.objects[object.id] = object.pos.clone();
+
   }
 }
 
@@ -245,7 +277,10 @@ class Vector{
     return new Vector(this.y*v.z - this.z*v.y, this.z*v.x - this.x*v.z, this.x*v.y - this.y*v.x);
   }
   norm(){
-	return Math.sqrt(this.x*this.x + this.y*this.y + this.z*this.z);
+	  return Math.sqrt(this.x*this.x + this.y*this.y + this.z*this.z);
+  }
+  normalize(){
+    return this.mult(1/this.norm());
   }
 }
 
@@ -280,11 +315,11 @@ class Obj{
       ctx.closePath();
     }
   }
-  update(){
+  update(dt){
 
-    const mu = 0.9;
+    const mu = 2.5;
     const G = 9.81;
-    
+    /* 
     const Mz = ((mu * this.m * G * 2) / 3) * 0.024;
     const Mxy = (7 / (5 * Math.sqrt(2))) * this.r * mu * this.m * G
 
@@ -305,21 +340,38 @@ class Obj{
         -kw * this.rvel.y,
         -(5 / 2) * (Mz / (this.m * this.r * this.r)) * Math.sign(this.rvel.z)
       ).mult(1/60))
-    }
+    }*/
 
 
     //this.vel = this.vel.mult(0.99);
-    //if(this.vel.norm() < 0.1) {this.vel = new Vector(0,0,0);this.rvel = new Vector(0, 0, 0)}
-    /*this.acc = this.acc.add(new Vector(
-      -this.m * G * f * Math.cos(Math.atan2(this.vel.y, this.vel.x)),
-      -this.m * G * f * Math.sin(Math.atan2(this.vel.y, this.vel.x))
-    ))*/
-    this.pos = this.pos.add(this.vel);
+    if(this.vel.norm() < 0.01) {
+      this.vel = new Vector(0,0,0)
+    }else{
+      if(5/7*mu*G*dt > this.vel.norm()){
+        this.vel = new Vector(0,0,0);
+      }else {
+        this.vel = this.vel.add(this.vel.normalize().mult((-5/7)*mu*G).mult(dt));
+      }
+    }
+    this.pos = this.pos.add(this.vel.mult(dt));
 
-    if(this.pos.x-this.r < -this.world.pool.size.x/2) this.vel.x = Math.abs(this.vel.x);
-    if(this.pos.x+this.r > this.world.pool.size.x/2) this.vel.x = -Math.abs(this.vel.x);
-    if(this.pos.y-this.r < -this.world.pool.size.y/2) this.vel.y = Math.abs(this.vel.y);
-    if(this.pos.y+this.r > this.world.pool.size.y/2) this.vel.y = -Math.abs(this.vel.y);
+    const e = 0.2;
+    if(this.pos.x-this.r < -this.world.pool.size.x/2){
+      this.pos.x = -this.world.pool.size.x/2 + this.r;
+      this.vel.x = Math.abs(this.vel.x) * e;
+    }
+    if(this.pos.x+this.r > this.world.pool.size.x/2){
+      this.pos.x = this.world.pool.size.x/2 - this.r;
+      this.vel.x = -Math.abs(this.vel.x) * e;
+    }
+    if(this.pos.y-this.r < -this.world.pool.size.y/2){
+      this.pos.y = -this.world.pool.size.y/2 + this.r;
+      this.vel.y = Math.abs(this.vel.y) * e;
+    }
+    if(this.pos.y+this.r > this.world.pool.size.y/2){
+      this.pos.y = this.world.pool.size.y/2 - this.r;
+      this.vel.y = -Math.abs(this.vel.y) * e;
+    }
   }
   
   clone(){
