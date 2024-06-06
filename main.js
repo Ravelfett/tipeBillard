@@ -113,7 +113,10 @@ if(true){
   const s = 1;
   const pool = new Pool(new Vector(50, 50/2, 0), 20);
   let wrld = new World(s, false, pool);
-  wrld.objects.push(new Obj(wrld, 10, 10, s));
+  wrld.main.pos.x = -23;
+  wrld.main.vel.x = 43;
+  wrlds.push(wrld);
+  /*wrld.objects.push(new Obj(wrld, 10, 10, s));
   wrld.main.pos.x = -10;
   //wrld.main.vel.x = 40;
   wrlds.push(wrld);
@@ -122,7 +125,7 @@ if(true){
     let newWorld = wrld.clone();
     //newWorld.main.vel.y = Math.random()*12 - 6;
     wrlds.push(newWorld);
-  }
+  }*/
 }else{
   for(let i = 0; i < nb; i++){
     let wrld = new World(1);
@@ -257,9 +260,10 @@ function render(){
   }*/
 
   if(update){
-    for(let k = 0; k < 4; k++){
+    let t = 1;
+    for(let k = 0; k < t; k++){
       for(let i = 0; i < wrlds.length; i++){
-        wrlds[i].update(1/240);
+        wrlds[i].update(1/(60*t));
         wrlds[i].quadtree.reset();
         for(let obj of wrlds[i].objects){
           if(obj.s != 1){

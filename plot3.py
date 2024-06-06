@@ -27,9 +27,9 @@ plt.figure(figsize=(10, 6))
 
 for f in f_values:
     velocities = simulate_velocity(f, initial_v, time_step, total_time)
-    plt.plot(time, velocities, label=f'f = {f}')
+    plt.plot(time, velocities, label=f'mu = {f}')
 
-plt.title('Vitesse en fonction du temps pour différentes valeurs de f')
+plt.title('Vitesse en fonction du temps pour différentes valeurs de mu')
 plt.xlabel('Temps')
 plt.ylabel('Vitesse')
 plt.legend()

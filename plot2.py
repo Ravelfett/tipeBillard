@@ -67,7 +67,7 @@ for segment in segments:
     # Plot the linear regression line
     plt.plot(times, y_pred, linestyle='--', label=f'Linear fit (slope={slope:.2f})')
 
-plt.xlabel('Temps (frames)')
+plt.xlabel('Temps (s)')
 plt.ylabel('Vitesse (cm/s)')
 plt.title('Vitesse en fonction du temps pour plusieurs lancés')
 plt.legend()
