@@ -61,19 +61,22 @@ step = 2
 # Plotting x velocities
 plt.subplot(1, 2, 1)
 for segment in segments:
-    plt.plot(segment[time_col], segment[x_col], label='Segment data')
+    times, x_velocities = calculate_x_velocity(segment)
+    plt.plot(times, x_velocities)
+    #plt.plot(segment[time_col], segment[x_col], label='Segment data')
 plt.xlabel('Temps (s)')
-plt.ylabel('Position X (cm/s)')
-plt.title('Position X en fonction du temps')
+plt.ylabel('Vitesse X (cm/s)')
+plt.title('Vitesse X en fonction du temps')
 plt.legend()
 
 # Plotting y velocities
 plt.subplot(1, 2, 2)
 for segment in segments:
-    plt.plot(segment[time_col], segment[y_col], label='Segment data')
+    times, y_velocities = calculate_y_velocity(segment)
+    plt.plot(times, y_velocities)
 plt.xlabel('Temps (s)')
-plt.ylabel('Position Y (cm/s)')
-plt.title('Position Y en fonction du temps')
+plt.ylabel('Vitesse Y (cm/s)')
+plt.title('Vitesse Y en fonction du temps')
 plt.legend()
 
 plt.tight_layout()

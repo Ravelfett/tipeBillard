@@ -101,31 +101,50 @@ function setupWorldCopies(){
 	}
 }
 
+function downloadCanvas(context, x, y, sx, sy){
+  const imageData = context.getImageData(x, y, sx, sy);
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = sx;
+  tempCanvas.height = sy;
+  const tempCtx = tempCanvas.getContext('2d');
+
+  // Put the extracted image data onto the new canvas
+  tempCtx.putImageData(imageData, 0, 0);
+
+  // Convert the new canvas to a data URL
+  const dataURL = tempCanvas.toDataURL('image/png');
+
+  // Create a download link
+  const downloadLink = document.createElement('a');
+  downloadLink.href = dataURL;
+  downloadLink.download = 'canpic.png';
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
+}
+
 const wrlds = [];
 
-const nb = 1;
-let rec = 1;
+const nb = 3;
+let rec = 2;
 const save = false;
 let cshot = 0;
 let dshot = shots.length;
 
 if(true){
   const s = 1;
-  const pool = new Pool(new Vector(50, 50/2, 0), 20);
-  let wrld = new World(s, false, pool);
-  wrld.main.pos.x = -23;
-  wrld.main.vel.x = 43;
-  wrlds.push(wrld);
-  /*wrld.objects.push(new Obj(wrld, 10, 10, s));
-  wrld.main.pos.x = -10;
-  //wrld.main.vel.x = 40;
+  let pool = new Pool(new Vector(50, 50/2, 0), 20);
+  let wrld = new World(s, true, pool);
+  wrld.main.vel.x = 88;
+  //wrld.main.vel.y = 2;
   wrlds.push(wrld);
 
   for(let i = 0; i < nb; i++){
-    let newWorld = wrld.clone();
-    //newWorld.main.vel.y = Math.random()*12 - 6;
+    let pool = new Pool(new Vector(50, 50/2, 0), 20);
+    let newWorld = wrld.clone(pool);
+    newWorld.main.vel.y = Math.random()*4 - 2;
     wrlds.push(newWorld);
-  }*/
+  }
 }else{
   for(let i = 0; i < nb; i++){
     let wrld = new World(1);
@@ -141,7 +160,6 @@ const frames = [];
 
 //let time = -200;
 //const data = [];
-
 
 function render(){  
   //time ++;
@@ -166,27 +184,8 @@ function render(){
         const dh = 50;
         const w = width - 2*dw;
         const h = height - 2*dh;
-
-        const imageData = context.getImageData(dw, dh, w, h);
-
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = w;
-        tempCanvas.height = h;
-        const tempCtx = tempCanvas.getContext('2d');
-
-        // Put the extracted image data onto the new canvas
-        tempCtx.putImageData(imageData, 0, 0);
-
-        // Convert the new canvas to a data URL
-        const dataURL = tempCanvas.toDataURL('image/png');
-
-        // Create a download link
-        const downloadLink = document.createElement('a');
-        downloadLink.href = dataURL;
-        downloadLink.download = 'canvas-region.png';
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        document.body.removeChild(downloadLink);
+        
+        downloadCanvas(context, dw, dh, w, h);
       }
 
       let x = shots[0][cshot][0];
@@ -213,6 +212,20 @@ function render(){
       wrlds[1].main.vel.x = x;
       wrlds[1].main.vel.y = y;
       cshot++;
+    }
+  }else if(rec == 2){
+    let allStopped = wrlds.every((wrld) => wrld.objects.every((obj) => obj.vel.x == 0 && obj.vel.y == 0));
+    if(allStopped){
+      for(let i = 0; i < wrlds.length; i++){
+        mode = i;
+        wrlds[mode].render(context, true, true);
+        const dw = 200;
+        const dh = 50;
+        const w = width - 2*dw;
+        const h = height - 2*dh;
+        downloadCanvas(context, dw, dh, w, h);
+      }
+      rec = 3;
     }
   }
 

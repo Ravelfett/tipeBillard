@@ -206,8 +206,8 @@ class World{
       }
     }
   }
-  clone(){
-    let cp = new World(this.size, false, this.pool);
+  clone(pool){
+    let cp = new World(this.size, false, pool);
     cp.objects = [];
     for(let i in this.objects){
       cp.objects.push(this.objects[i].clone());
@@ -223,7 +223,7 @@ class Pool{
     this.size = size;
     this.holes = [];
     this.objects = {};
-    this.res = 1/2;
+    this.res = 1;
     this.zoom = zoom;
     this.canvas = new OffscreenCanvas(this.zoom*size.x*this.res, this.zoom*size.y*this.res);
     let ctx = this.canvas.getContext('2d');
@@ -347,10 +347,10 @@ class Obj{
     if(this.vel.norm() < 0.01) {
       this.vel = new Vector(0,0,0)
     }else{
-      if(5/7*mu*G*dt > this.vel.norm()){
+      if(25*dt > this.vel.norm()){
         this.vel = new Vector(0,0,0);
       }else {
-        this.vel = this.vel.add(this.vel.normalize().mult((-5/7)*mu*G).mult(dt));
+        this.vel = this.vel.add(this.vel.normalize().mult(-20).mult(dt));
       }
     }
     this.pos = this.pos.add(this.vel.mult(dt));
